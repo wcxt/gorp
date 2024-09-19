@@ -77,6 +77,15 @@ func handleProxyRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) 
 
 		req.Header.Add("Via", r.Proto+" "+ProxyPseudonym)
 
+		// downstream clients should accept trailer fields
+		// See https://datatracker.ietf.org/doc/html/rfc9110#name-limitations-on-use-of-trail
+		TEValues := strings.Split(r.Header.Get("TE"), ",")
+		for _, val := range TEValues {
+			if val == "trailers" {
+				req.Header.Set("TE", "trailers")
+			}
+		}
+
 		res, err := http.DefaultTransport.RoundTrip(req)
 		if err != nil {
 			log.Print(err)
