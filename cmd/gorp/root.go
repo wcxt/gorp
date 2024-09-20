@@ -94,6 +94,8 @@ func handleProxyRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) 
 		}
 		defer res.Body.Close()
 
+		w.WriteHeader(res.StatusCode)
+
 		// Headers Must be set before Write or WriteHeader
 		for header, value := range res.Header {
 			for _, v := range value {
