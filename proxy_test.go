@@ -14,13 +14,18 @@ const (
 	TestProxyURL     = "http://localhost:8080"
 	TestStatusCode   = http.StatusAccepted
 	TestResponseBody = "Hello World!"
-
-	TestHeaderKey   = "Test-Header"
-	TestHeaderValue = "testvalue"
+	TestHeaderKey    = "Test-Header"
+	TestHeaderValue  = "testvalue"
+	TestProto        = "HTTP/1.1"
 )
 
 func TestHandleProxyRequest(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		want := TestProto + " " + gorp.ProxyPseudonym
+		if r.Header.Get("Via") != want {
+			t.Errorf("got Via = %s, want %s", r.Header.Get("Via"), want)
+		}
+
 		w.Header().Set(TestHeaderKey, TestHeaderValue)
 		w.WriteHeader(TestStatusCode)
 		w.Write([]byte(TestResponseBody))
@@ -35,6 +40,7 @@ func TestHandleProxyRequest(t *testing.T) {
 	handle := gorp.HandleProxyRequest(destURL)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", TestProxyURL, nil)
+	req.Proto = TestProto
 
 	handle(w, req)
 	res := w.Result()
