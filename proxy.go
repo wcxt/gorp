@@ -64,8 +64,6 @@ func HandleProxyRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) 
 		}
 		defer res.Body.Close()
 
-		w.WriteHeader(res.StatusCode)
-
 		// Headers Must be set before Write or WriteHeader
 		for header, value := range res.Header {
 			for _, v := range value {
@@ -77,6 +75,8 @@ func HandleProxyRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) 
 		for trailer, _ := range res.Trailer {
 			w.Header().Add("Trailer", trailer)
 		}
+
+		w.WriteHeader(res.StatusCode)
 
 		// Buffered copy from body to writer
 		if _, err := io.Copy(w, res.Body); err != nil {
