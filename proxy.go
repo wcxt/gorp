@@ -24,14 +24,14 @@ var hopByHopHeaders = []string{
 }
 
 func removeHopByHopHeaders(r *http.Request) {
-	for _, header := range hopByHopHeaders {
-		r.Header.Del(header)
-	}
-
 	// handle hop-by-hop headers specified by client
 	headers := strings.Split(r.Header.Get("Connection"), ",")
 	for _, header := range headers {
 		r.Header.Del(strings.TrimSpace(header))
+	}
+
+	for _, header := range hopByHopHeaders {
+		r.Header.Del(header)
 	}
 }
 
