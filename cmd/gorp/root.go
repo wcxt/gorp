@@ -78,7 +78,7 @@ var rootCmd = cobra.Command{
 			tlsConfig.Certificates = []tls.Certificate{cert}
 		}
 
-		http.HandleFunc(Source, gorp.HandleProxyRequest(parsedDst))
+		http.HandleFunc(Source, gorp.HandleRequest(parsedDst))
 
 		if TLSEnabled {
 			log.Fatal(http.ListenAndServeTLS(":"+Port, TLSCertificatePath, TLSPrivateKeyPath, nil))

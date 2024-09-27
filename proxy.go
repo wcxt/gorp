@@ -35,7 +35,7 @@ func removeHopByHopHeaders(r *http.Request) {
 	}
 }
 
-func HandleProxyRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) {
+func HandleRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := r.Clone(context.Background())
 

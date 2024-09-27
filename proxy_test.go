@@ -17,7 +17,7 @@ const (
 	TestProto        = "HTTP/1.1"
 )
 
-func TestHandleProxyRequest(t *testing.T) {
+func TestHandleRequest(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if len(r.TransferEncoding) != 0 {
 			t.Errorf("got Transfer-Encoding = %v, want %v", r.TransferEncoding, []string{})
@@ -65,7 +65,7 @@ func TestHandleProxyRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handle := gorp.HandleProxyRequest(destURL)
+	handle := gorp.HandleRequest(destURL)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", TestProxyURL, nil)
 	req.Proto = TestProto
