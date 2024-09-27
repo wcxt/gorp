@@ -13,9 +13,9 @@ import (
 	"github.com/wcxt/gorp"
 )
 
-const DefaultPort = "8080"
+const DefaultPort = 8080
 
-var Port string
+var Port int
 var Source, Destination string
 var TLSEnabled bool
 var TLSCertificatePath, TLSPrivateKeyPath string
@@ -39,7 +39,7 @@ func validateOriginServerURL(unverifiedURL *url.URL) bool {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&Port, "port", "p", DefaultPort, "port at which proxy will be accepting requests")
+	rootCmd.Flags().IntVarP(&Port, "port", "p", DefaultPort, "port at which proxy will be accepting requests")
 	rootCmd.Flags().StringVar(&Source, "src", "/", "HTTP path to which origin server will be proxied to")
 	rootCmd.Flags().StringVar(&Destination, "dst", "", "proxied HTTP origin server (required)")
 	rootCmd.Flags().BoolVar(&TLSEnabled, "tls", false, "use TLS protocol for HTTP proxy encryption")
@@ -53,7 +53,9 @@ var rootCmd = cobra.Command{
 	Use:   "gorp",
 	Short: "Gorp is a simple single host HTTP reverse proxy server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		tlsConfig := &tls.Config{}
+		if err := gorp.ValidatePort(Port); err != nil {
+			return fmt.Errorf("port: %w", err)
+		}
 
 		parsedSrc, err := url.Parse(Source)
 		if err != nil || !validateOnlyPathURL(parsedSrc) {
@@ -65,25 +67,21 @@ var rootCmd = cobra.Command{
 			return fmt.Errorf("Invalid --dst flag set")
 		}
 
-		parsedPort, err := strconv.Atoi(Port)
-		if err != nil || parsedPort < 0 {
-			return fmt.Errorf("Invalid --port flag set")
-		}
-
 		if TLSEnabled {
-			cert, err := tls.LoadX509KeyPair(TLSCertificatePath, TLSPrivateKeyPath)
+			_, err := tls.LoadX509KeyPair(TLSCertificatePath, TLSPrivateKeyPath)
 			if err != nil {
 				return fmt.Errorf("Invalid --tls configuration set: %w", err)
 			}
-			tlsConfig.Certificates = []tls.Certificate{cert}
 		}
+
+		addr := ":" + strconv.Itoa(Port)
 
 		http.HandleFunc(Source, gorp.HandleRequest(parsedDst))
 
 		if TLSEnabled {
-			log.Fatal(http.ListenAndServeTLS(":"+Port, TLSCertificatePath, TLSPrivateKeyPath, nil))
+			log.Fatal(http.ListenAndServeTLS(addr, TLSCertificatePath, TLSPrivateKeyPath, nil))
 		} else {
-			log.Fatal(http.ListenAndServe(":"+Port, nil))
+			log.Fatal(http.ListenAndServe(addr, nil))
 		}
 
 		return nil
