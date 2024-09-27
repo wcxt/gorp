@@ -53,8 +53,10 @@ func TestHandleProxyRequest(t *testing.T) {
 		}
 
 		w.Header().Set("Response-Header", "test")
+		w.Header().Set("Trailer", "Trailer-Header")
 		w.WriteHeader(TestStatusCode)
 		w.Write([]byte(TestResponseBody))
+		w.Header().Set("Trailer-Header", "test")
 	}))
 	defer ts.Close()
 
@@ -93,5 +95,8 @@ func TestHandleProxyRequest(t *testing.T) {
 	}
 	if string(body) != TestResponseBody {
 		t.Errorf("got res.Body = %s, want %s", string(body), TestResponseBody)
+	}
+	if res.Trailer.Get("Trailer-Header") != "test" {
+		t.Errorf("got Trailer-Header = %s, want %s", res.Header.Get("Trailer-Header"), "test")
 	}
 }
