@@ -26,7 +26,34 @@ func TestValidateSourceFlag(t *testing.T) {
 
 	for _, test := range tests {
 		if err := gorp.ValidateSourceFlag(test.source); (err == nil) != test.valid {
-			t.Errorf("%s: wanted err=nil, got error %s", test.source, err.Error())
+			t.Errorf("%s: wanted valid=%v, got error %v", test.source, test.valid, err)
+		}
+	}
+}
+
+func TestValidateDestinationFlag(t *testing.T) {
+	tests := []struct {
+		dest  string
+		valid bool
+	}{
+		{"hello", false},
+		{"hello.com", false},
+		{"hello.com:80", false},
+		{"hello.com/hello", false},
+		{"http://", false},
+		{"http://hello.com/", true},
+		{"http://hello.com/?guery=value", false},
+		{"http://hello.com/#fragment", false},
+		{"http://hello.com", true},
+		{"http://hello.com:80", true},
+		{"some://hello.com:80", false},
+		{"http://hello.com/hello", false},
+		{"/hello/bello", false},
+	}
+
+	for _, test := range tests {
+		if err := gorp.ValidateDestinationFlag(test.dest); (err == nil) != test.valid {
+			t.Errorf("%s: wanted valid=%v, got error %v", test.dest, test.valid, err)
 		}
 	}
 }
