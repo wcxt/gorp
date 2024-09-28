@@ -20,14 +20,6 @@ var Source, Destination string
 var TLSEnabled bool
 var TLSCertificatePath, TLSPrivateKeyPath string
 
-func validateOnlyPathURL(unverifiedURL *url.URL) bool {
-	return unverifiedURL.Scheme == "" &&
-		unverifiedURL.User == nil &&
-		unverifiedURL.Host == "" &&
-		unverifiedURL.RawQuery == "" &&
-		unverifiedURL.Fragment == ""
-}
-
 // NOTE: Support only HTTP scheme
 func validateOriginServerURL(unverifiedURL *url.URL) bool {
 	return unverifiedURL.Scheme == "http" &&
@@ -56,10 +48,8 @@ var rootCmd = cobra.Command{
 		if err := gorp.ValidatePort(Port); err != nil {
 			return fmt.Errorf("port: %w", err)
 		}
-
-		parsedSrc, err := url.Parse(Source)
-		if err != nil || !validateOnlyPathURL(parsedSrc) {
-			return fmt.Errorf("Invalid --src flag set")
+		if err := gorp.ValidateSourceFlag(Source); err != nil {
+			return fmt.Errorf("source: %w", err)
 		}
 
 		parsedDst, err := url.Parse(Destination)
