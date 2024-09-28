@@ -20,16 +20,6 @@ var Source, Destination string
 var TLSEnabled bool
 var TLSCertificatePath, TLSPrivateKeyPath string
 
-// NOTE: Support only HTTP scheme
-func validateOriginServerURL(unverifiedURL *url.URL) bool {
-	return unverifiedURL.Scheme == "http" &&
-		unverifiedURL.User == nil &&
-		unverifiedURL.Host != "" &&
-		unverifiedURL.Path == "" &&
-		unverifiedURL.RawQuery == "" &&
-		unverifiedURL.Fragment == ""
-}
-
 func init() {
 	rootCmd.Flags().IntVarP(&Port, "port", "p", DefaultPort, "port at which proxy will be accepting requests")
 	rootCmd.Flags().StringVar(&Source, "src", "/", "HTTP path to which origin server will be proxied to")
@@ -51,20 +41,19 @@ var rootCmd = cobra.Command{
 		if err := gorp.ValidateSourceFlag(Source); err != nil {
 			return fmt.Errorf("source: %w", err)
 		}
-
-		parsedDst, err := url.Parse(Destination)
-		if err != nil || !validateOriginServerURL(parsedDst) {
-			return fmt.Errorf("Invalid --dst flag set")
+		if err := gorp.ValidateDestinationFlag(Destination); err != nil {
+			return fmt.Errorf("destination: %w", err)
 		}
 
 		if TLSEnabled {
 			_, err := tls.LoadX509KeyPair(TLSCertificatePath, TLSPrivateKeyPath)
 			if err != nil {
-				return fmt.Errorf("Invalid --tls configuration set: %w", err)
+				return fmt.Errorf("tls: %w", err)
 			}
 		}
 
 		addr := ":" + strconv.Itoa(Port)
+		parsedDst, _ := url.Parse(Destination)
 
 		http.HandleFunc(Source, gorp.HandleRequest(parsedDst))
 

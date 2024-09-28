@@ -34,3 +34,28 @@ func ValidateSourceFlag(source string) error {
 
 	return err
 }
+
+func ValidateDestinationFlag(dest string) error {
+	parsed, err := url.Parse(dest)
+	if err != nil {
+		return fmt.Errorf("%s: must be a valid URL", dest)
+	}
+
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return fmt.Errorf("%s: must be a absolute URL", dest)
+	}
+	if parsed.Scheme != "http" {
+		err = fmt.Errorf("%s: unsupported URL scheme", dest)
+	}
+	if parsed.Path != "" && parsed.Path != "/" {
+		err = errors.Join(err, fmt.Errorf("%s: must have root path", dest))
+	}
+	if parsed.RawQuery != "" {
+		err = errors.Join(err, fmt.Errorf("%s: must not include query parameters", dest))
+	}
+	if parsed.Fragment != "" {
+		err = errors.Join(err, fmt.Errorf("%s: must not include fragment identifier", dest))
+	}
+
+	return err
+}
