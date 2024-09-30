@@ -47,7 +47,7 @@ func TestHandleRequest(t *testing.T) {
 			t.Errorf("got request Remove-Header = %s, want %s", r.Header.Get("Remove-Header"), "")
 		}
 
-		want := TestProto + " " + gorp.ProxyPseudonym
+		want := "john, " + TestProto + " " + gorp.ProxyPseudonym
 		if r.Header.Get("Via") != want {
 			t.Errorf("got Via = %s, want %s", r.Header.Get("Via"), want)
 		}
@@ -57,10 +57,11 @@ func TestHandleRequest(t *testing.T) {
 		w.Header().Set("Connection", "close, Remove-Header")
 		w.Header().Set("Remove-Header", "test")
 
-		w.Header().Set("Trailer", "Trailer-Header")
+		w.Header().Set("Trailer", "Trailer-Header, Another-Header")
 		w.WriteHeader(TestStatusCode)
 		w.Write([]byte(TestResponseBody))
 		w.Header().Set("Trailer-Header", "test")
+		w.Header().Set("Another-Header", "test")
 	}))
 	defer ts.Close()
 
@@ -82,6 +83,8 @@ func TestHandleRequest(t *testing.T) {
 	req.Header.Set("Proxy-Authorization", "test")
 	req.Header.Set("Proxy-Authenticate", "test")
 	req.Header.Set("Remove-Header", "test")
+
+	req.Header.Set("Via", "john")
 
 	handle(w, req)
 	res := w.Result()

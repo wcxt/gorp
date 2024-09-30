@@ -45,7 +45,12 @@ func HandleRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) {
 
 		removeHopByHopHeaders(req.Header)
 
-		req.Header.Add("Via", r.Proto+" "+ProxyPseudonym)
+		prior := req.Header.Get("Via")
+		if prior != "" {
+			req.Header.Set("Via", prior+", "+r.Proto+" "+ProxyPseudonym)
+		} else {
+			req.Header.Set("Via", r.Proto+" "+ProxyPseudonym)
+		}
 
 		// downstream clients should accept trailer fields
 		// See https://datatracker.ietf.org/doc/html/rfc9110#name-limitations-on-use-of-trail
@@ -73,10 +78,12 @@ func HandleRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) {
 			}
 		}
 
-		// Set Trailers header
+		// Trailer Support: Set Trailers header
+		trailers := make([]string, len(res.Trailer))
 		for trailer, _ := range res.Trailer {
-			w.Header().Add("Trailer", trailer)
+			trailers = append(trailers, trailer)
 		}
+		w.Header().Add("Trailer", strings.Join(trailers, ", "))
 
 		w.WriteHeader(res.StatusCode)
 
@@ -87,7 +94,7 @@ func HandleRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		// Set trailers
+		// Trailer Support: Set trailers
 		for trailer, value := range res.Trailer {
 			for _, v := range value {
 				w.Header().Add(trailer, v)
