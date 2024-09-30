@@ -23,15 +23,15 @@ var hopByHopHeaders = []string{
 	"Proxy-Authenticate",
 }
 
-func removeHopByHopHeaders(r *http.Request) {
+func removeHopByHopHeaders(h http.Header) {
 	// handle hop-by-hop headers specified by client
-	headers := strings.Split(r.Header.Get("Connection"), ",")
+	headers := strings.Split(h.Get("Connection"), ",")
 	for _, header := range headers {
-		r.Header.Del(strings.TrimSpace(header))
+		h.Del(strings.TrimSpace(header))
 	}
 
 	for _, header := range hopByHopHeaders {
-		r.Header.Del(header)
+		h.Del(header)
 	}
 }
 
@@ -43,7 +43,7 @@ func HandleRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) {
 		req.URL.Scheme = dest.Scheme
 		req.Host = dest.Host
 
-		removeHopByHopHeaders(req)
+		removeHopByHopHeaders(req.Header)
 
 		req.Header.Add("Via", r.Proto+" "+ProxyPseudonym)
 
@@ -63,6 +63,8 @@ func HandleRequest(dest *url.URL) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		defer res.Body.Close()
+
+		removeHopByHopHeaders(res.Header)
 
 		// Headers Must be set before Write or WriteHeader
 		for header, value := range res.Header {
