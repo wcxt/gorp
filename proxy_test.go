@@ -26,7 +26,7 @@ func TestHandleRequest(t *testing.T) {
 			t.Errorf("got TE = %s, want %s", r.Header.Get("TE"), "trailers")
 		}
 		if r.Header.Get("Connection") != "" {
-			t.Errorf("got Connection = %s, want %s", r.Header.Get("Connection"), "")
+			t.Errorf("got request Connection = %s, want %s", r.Header.Get("Connection"), "")
 		}
 		if r.Header.Get("Keep-Alive") != "" {
 			t.Errorf("got Keep-Alive = %s, want %s", r.Header.Get("Keep-Alive"), "")
@@ -44,7 +44,7 @@ func TestHandleRequest(t *testing.T) {
 			t.Errorf("got Proxy-Authenticate = %s, want %s", r.Header.Get("Proxy-Authenticate"), "")
 		}
 		if r.Header.Get("Remove-Header") != "" {
-			t.Errorf("got Remove-Header = %s, want %s", r.Header.Get("Remove-Header"), "")
+			t.Errorf("got request Remove-Header = %s, want %s", r.Header.Get("Remove-Header"), "")
 		}
 
 		want := TestProto + " " + gorp.ProxyPseudonym
@@ -53,6 +53,10 @@ func TestHandleRequest(t *testing.T) {
 		}
 
 		w.Header().Set("Response-Header", "test")
+
+		w.Header().Set("Connection", "close, Remove-Header")
+		w.Header().Set("Remove-Header", "test")
+
 		w.Header().Set("Trailer", "Trailer-Header")
 		w.WriteHeader(TestStatusCode)
 		w.Write([]byte(TestResponseBody))
@@ -87,6 +91,12 @@ func TestHandleRequest(t *testing.T) {
 	}
 	if res.Header.Get("Response-Header") != "test" {
 		t.Errorf("got Test-Header = %s, want %s", res.Header.Get("Response-Header"), "test")
+	}
+	if res.Header.Get("Connection") != "" {
+		t.Errorf("got response Connection = %s, want %s", res.Header.Get("Connection"), "")
+	}
+	if res.Header.Get("Remove-Header") != "test" {
+		t.Errorf("got response Remove-Header = %s, want %s", res.Header.Get("Remove-Header"), "")
 	}
 
 	body, err := io.ReadAll(res.Body)
