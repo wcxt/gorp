@@ -3,9 +3,11 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 
 	"github.com/wcxt/gorp"
@@ -26,26 +28,38 @@ func main() {
 	flag.Visit(func(f *flag.Flag) { seenFlags[f.Name] = true })
 
 	if !seenFlags["dst"] {
-		log.Fatalf("required flag -dst was not provided")
+		fmt.Fprintln(os.Stderr, "required flag -dst was not provided")
+		flag.Usage()
+		os.Exit(2)
 	}
 	if seenFlags["cert"] != seenFlags["key"] {
-		log.Fatalf("if flag -cert or -key is set both flags must be set")
+		fmt.Fprintln(os.Stderr, "if flag -cert or -key is set both flags must be set")
+		flag.Usage()
+		os.Exit(2)
 	}
 
 	if err := gorp.ValidatePort(*portFlag); err != nil {
-		log.Fatalf("port: %s", err)
+		fmt.Fprintf(os.Stderr, "port: %s\n", err)
+		flag.Usage()
+		os.Exit(2)
 	}
 	if err := gorp.ValidateSourceFlag(*sourceFlag); err != nil {
-		log.Fatalf("source: %s", err)
+		fmt.Fprintf(os.Stderr, "source: %s\n", err)
+		flag.Usage()
+		os.Exit(2)
 	}
 	if err := gorp.ValidateDestinationFlag(*destinationFlag); err != nil {
-		log.Fatalf("destination: %s", err)
+		fmt.Fprintf(os.Stderr, "destination: %s\n", err)
+		flag.Usage()
+		os.Exit(2)
 	}
 
 	if *certFileFlag != "" || *keyFileFlag != "" {
 		_, err := tls.LoadX509KeyPair(*certFileFlag, *keyFileFlag)
 		if err != nil {
-			log.Fatalf("tls: %s", err)
+			fmt.Fprintf(os.Stderr, "tls: %s\n", err)
+			flag.Usage()
+			os.Exit(2)
 		}
 	}
 
