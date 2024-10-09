@@ -23,11 +23,11 @@ var hopByHopHeaders = []string{
 	"Proxy-Authenticate",
 }
 
-type reverseProxy struct {
+type ReverseProxy struct {
 	Destination *url.URL
 }
 
-func (rp *reverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (rp *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := r.Clone(context.Background())
 
 	req.URL.Host = rp.Destination.Host
