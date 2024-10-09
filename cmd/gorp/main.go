@@ -66,7 +66,7 @@ func main() {
 	addr := ":" + strconv.Itoa(*portFlag)
 	parsedDst, _ := url.Parse(*destinationFlag)
 
-	http.HandleFunc(*sourceFlag, gorp.HandleRequest(parsedDst))
+	http.Handle(*sourceFlag, &gorp.ReverseProxy{Destination: parsedDst})
 
 	if *certFileFlag != "" || *keyFileFlag != "" {
 		log.Fatal(http.ListenAndServeTLS(addr, *certFileFlag, *keyFileFlag, nil))
