@@ -6,10 +6,10 @@ import (
 	"github.com/wcxt/gorp"
 )
 
-func TestValidateSourceFlag(t *testing.T) {
+func TestValidatePath(t *testing.T) {
 	tests := []struct {
-		source string
-		valid  bool
+		path  string
+		valid bool
 	}{
 		{"hello", false},
 		{"hello.com", false},
@@ -25,16 +25,16 @@ func TestValidateSourceFlag(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := gorp.ValidateSourceFlag(test.source); (err == nil) != test.valid {
-			t.Errorf("%s: wanted valid=%v, got error %v", test.source, test.valid, err)
+		if err := gorp.ValidatePath(test.path); (err == nil) != test.valid {
+			t.Errorf("%s: wanted valid=%v, got error %v", test.path, test.valid, err)
 		}
 	}
 }
 
-func TestValidateDestinationFlag(t *testing.T) {
+func TestValidateUpstream(t *testing.T) {
 	tests := []struct {
-		dest  string
-		valid bool
+		upstream string
+		valid    bool
 	}{
 		{"hello", false},
 		{"hello.com", false},
@@ -52,8 +52,8 @@ func TestValidateDestinationFlag(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := gorp.ValidateDestinationFlag(test.dest); (err == nil) != test.valid {
-			t.Errorf("%s: wanted valid=%v, got error %v", test.dest, test.valid, err)
+		if err := gorp.ValidateUpstream(test.upstream); (err == nil) != test.valid {
+			t.Errorf("%s: wanted valid=%v, got error %v", test.upstream, test.valid, err)
 		}
 	}
 }

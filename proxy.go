@@ -24,15 +24,15 @@ var hopByHopHeaders = []string{
 }
 
 type ReverseProxy struct {
-	Destination *url.URL
+	Upstream *url.URL
 }
 
 func (rp *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := r.Clone(context.Background())
 
-	req.URL.Host = rp.Destination.Host
-	req.URL.Scheme = rp.Destination.Scheme
-	req.Host = rp.Destination.Host
+	req.URL.Host = rp.Upstream.Host
+	req.URL.Scheme = rp.Upstream.Scheme
+	req.Host = rp.Upstream.Host
 
 	removeHopByHopHeaders(req.Header)
 

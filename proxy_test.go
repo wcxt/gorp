@@ -65,12 +65,12 @@ func TestHandleRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	destURL, err := url.Parse(ts.URL)
+	upstreamURL, err := url.Parse(ts.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	handle := gorp.HandleRequest(destURL)
+	handler := gorp.ReverseProxy{Upstream: upstreamURL}
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", TestProxyURL, nil)
 	req.Proto = TestProto
@@ -86,7 +86,7 @@ func TestHandleRequest(t *testing.T) {
 
 	req.Header.Set("Via", "john")
 
-	handle(w, req)
+	handler.ServeHTTP(w, req)
 	res := w.Result()
 
 	if res.StatusCode != TestStatusCode {

@@ -14,22 +14,22 @@ import (
 )
 
 var (
-	portFlag        = flag.Int("port", 8080, "port at which proxy will be accepting requests")
-	sourceFlag      = flag.String("src", "/", "HTTP path to which origin server will be proxied to")
-	destinationFlag = flag.String("dst", "", "proxied HTTP origin server (required)")
-	certFileFlag    = flag.String("cert", "", "TLS certificate path used for TLS encryption")
-	keyFileFlag     = flag.String("key", "", "TLS private key path used for TLS encryption")
+	portFlag     = flag.Int("port", 8080, "port at which proxy will be accepting requests")
+	pathFlag     = flag.String("path", "/", "HTTP path to which origin server will be proxied to")
+	upstreamFlag = flag.String("upstream", "", "proxied HTTP origin server (required)")
+	certFileFlag = flag.String("cert", "", "TLS certificate path used for TLS encryption")
+	keyFileFlag  = flag.String("key", "", "TLS private key path used for TLS encryption")
 )
 
 func validate() error {
 	if err := gorp.ValidatePort(*portFlag); err != nil {
 		return fmt.Errorf("invalid value %d for port: %w", *portFlag, err)
 	}
-	if err := gorp.ValidateSourceFlag(*sourceFlag); err != nil {
-		return fmt.Errorf("invalid value %s for source: %w", *sourceFlag, err)
+	if err := gorp.ValidatePath(*pathFlag); err != nil {
+		return fmt.Errorf("invalid value %s for path: %w", *pathFlag, err)
 	}
-	if err := gorp.ValidateDestinationFlag(*destinationFlag); err != nil {
-		return fmt.Errorf("invalid value %s for destination: %w", *destinationFlag, err)
+	if err := gorp.ValidateUpstream(*upstreamFlag); err != nil {
+		return fmt.Errorf("invalid value %s for upstream: %w", *upstreamFlag, err)
 	}
 	if *certFileFlag != "" || *keyFileFlag != "" {
 		if _, err := tls.LoadX509KeyPair(*certFileFlag, *keyFileFlag); err != nil {
@@ -47,7 +47,7 @@ func main() {
 	flag.Visit(func(f *flag.Flag) { seenFlags[f.Name] = true })
 
 	if !seenFlags["dst"] {
-		fmt.Fprintln(os.Stderr, "required flag -dst was not provided")
+		fmt.Fprintln(os.Stderr, "required flag -upstream was not provided")
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -64,9 +64,12 @@ func main() {
 	}
 
 	addr := ":" + strconv.Itoa(*portFlag)
-	parsedDst, _ := url.Parse(*destinationFlag)
+	parsedUpstream, err := url.Parse(*upstreamFlag)
+	if err != nil {
+		panic(err)
+	}
 
-	http.Handle(*sourceFlag, &gorp.ReverseProxy{Destination: parsedDst})
+	http.Handle(*pathFlag, &gorp.ReverseProxy{Upstream: parsedUpstream})
 
 	if *certFileFlag != "" || *keyFileFlag != "" {
 		log.Fatal(http.ListenAndServeTLS(addr, *certFileFlag, *keyFileFlag, nil))
