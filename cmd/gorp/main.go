@@ -21,6 +21,25 @@ var (
 	keyFileFlag     = flag.String("key", "", "TLS private key path used for TLS encryption")
 )
 
+func validate() error {
+	if err := gorp.ValidatePort(*portFlag); err != nil {
+		return fmt.Errorf("invalid value %d for port: %w", *portFlag, err)
+	}
+	if err := gorp.ValidateSourceFlag(*sourceFlag); err != nil {
+		return fmt.Errorf("invalid value %s for source: %w", *sourceFlag, err)
+	}
+	if err := gorp.ValidateDestinationFlag(*destinationFlag); err != nil {
+		return fmt.Errorf("invalid value %s for destination: %w", *destinationFlag, err)
+	}
+	if *certFileFlag != "" || *keyFileFlag != "" {
+		if _, err := tls.LoadX509KeyPair(*certFileFlag, *keyFileFlag); err != nil {
+			return fmt.Errorf("invalid files %s, %s for key pair: %w", *certFileFlag, *keyFileFlag, err)
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -38,29 +57,10 @@ func main() {
 		os.Exit(2)
 	}
 
-	if err := gorp.ValidatePort(*portFlag); err != nil {
-		fmt.Fprintf(os.Stderr, "port: %s\n", err)
+	if err := validate(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		flag.Usage()
 		os.Exit(2)
-	}
-	if err := gorp.ValidateSourceFlag(*sourceFlag); err != nil {
-		fmt.Fprintf(os.Stderr, "source: %s\n", err)
-		flag.Usage()
-		os.Exit(2)
-	}
-	if err := gorp.ValidateDestinationFlag(*destinationFlag); err != nil {
-		fmt.Fprintf(os.Stderr, "destination: %s\n", err)
-		flag.Usage()
-		os.Exit(2)
-	}
-
-	if *certFileFlag != "" || *keyFileFlag != "" {
-		_, err := tls.LoadX509KeyPair(*certFileFlag, *keyFileFlag)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "tls: %s\n", err)
-			flag.Usage()
-			os.Exit(2)
-		}
 	}
 
 	addr := ":" + strconv.Itoa(*portFlag)
