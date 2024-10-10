@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -24,17 +25,28 @@ var hopByHopHeaders = []string{
 }
 
 type ReverseProxy struct {
-	Upstream *url.URL
+	Upstream        *url.URL
+	RemoveXFHeaders bool
+	AddXFHeaders    bool
 }
 
 func (rp *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := r.Clone(context.Background())
 
+	removeHopByHopHeaders(req.Header)
+
+	if rp.RemoveXFHeaders {
+		req.Header.Del("X-Forwarded-For")
+		req.Header.Del("X-Forwarded-Host")
+		req.Header.Del("X-Forwarded-Proto")
+	}
+	if rp.AddXFHeaders {
+		addXForwardedHeaders(req)
+	}
+
 	req.URL.Host = rp.Upstream.Host
 	req.URL.Scheme = rp.Upstream.Scheme
 	req.Host = rp.Upstream.Host
-
-	removeHopByHopHeaders(req.Header)
 
 	prior := req.Header.Get("Via")
 	if prior != "" {
@@ -102,5 +114,27 @@ func removeHopByHopHeaders(h http.Header) {
 
 	for _, header := range hopByHopHeaders {
 		h.Del(header)
+	}
+}
+
+func addXForwardedHeaders(r *http.Request) {
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		panic(err)
+	}
+
+	prior := r.Header.Get("X-Forwarded-For")
+	if prior != "" {
+		r.Header.Set("X-Forwarded-For", prior+", "+ip)
+	} else {
+		r.Header.Set("X-Forwarded-For", ip)
+	}
+
+	r.Header.Set("X-Forwarded-Host", r.Host)
+
+	if r.TLS != nil {
+		r.Header.Set("X-Forwarded-Proto", "https")
+	} else {
+		r.Header.Set("X-Forwarded-Proto", "http")
 	}
 }

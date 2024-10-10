@@ -19,6 +19,8 @@ var (
 	upstreamFlag = flag.String("upstream", "", "proxied HTTP origin server (required)")
 	certFileFlag = flag.String("cert", "", "TLS certificate path used for TLS encryption")
 	keyFileFlag  = flag.String("key", "", "TLS private key path used for TLS encryption")
+	AddXFFlag    = flag.Bool("add-xf-headers", true, "Adds XF headers proxy server request")
+	RemoveXFFlag = flag.Bool("remove-xf-headers", true, "Removes XF headers from incoming request")
 )
 
 func validate() error {
@@ -76,7 +78,11 @@ func main() {
 		panic(err)
 	}
 
-	http.Handle(*pathFlag, &gorp.ReverseProxy{Upstream: parsedUpstream})
+	http.Handle(*pathFlag, &gorp.ReverseProxy{
+		Upstream:        parsedUpstream,
+		AddXFHeaders:    *AddXFFlag,
+		RemoveXFHeaders: *RemoveXFFlag,
+	})
 
 	if *certFileFlag != "" || *keyFileFlag != "" {
 		log.Fatal(http.ListenAndServeTLS(addr, *certFileFlag, *keyFileFlag, nil))
