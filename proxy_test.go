@@ -2,6 +2,7 @@ package gorp_test
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,6 +19,23 @@ const (
 )
 
 func TestHandleRequest(t *testing.T) {
+	req := httptest.NewRequest("GET", TestProxyURL, nil)
+	req.Proto = TestProto
+	req.TransferEncoding = []string{"gzip", "chunked"}
+	req.Header.Set("TE", "trailers, deflate")
+	req.Header.Set("Connection", "close, Remove-Header")
+	req.Header.Set("Keep-Alive", "test")
+	req.Header.Set("Upgrade", "test")
+	req.Header.Set("Trailer", "Trailer-Header")
+	req.Header.Set("Proxy-Authorization", "test")
+	req.Header.Set("Proxy-Authenticate", "test")
+	req.Header.Set("Remove-Header", "test")
+
+	req.Header.Set("X-Forwarded-For", "1.1.1.1")
+	req.Host = "example.com"
+
+	req.Header.Set("Via", "john")
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if len(r.TransferEncoding) != 0 {
 			t.Errorf("got Transfer-Encoding = %v, want %v", r.TransferEncoding, []string{})
@@ -52,6 +70,21 @@ func TestHandleRequest(t *testing.T) {
 			t.Errorf("got Via = %s, want %s", r.Header.Get("Via"), want)
 		}
 
+		host, _, err := net.SplitHostPort(req.RemoteAddr)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if r.Header.Get("X-Forwarded-For") != host {
+			t.Errorf("got X-Forwarded-For = %s, want %s", r.Header.Get("X-Forwarded-For"), host)
+		}
+		if r.Header.Get("X-Forwarded-Host") != "example.com" {
+			t.Errorf("got X-Forwarded-Host = %s, want %s", r.Header.Get("X-Forwarded-Host"), "example.com")
+		}
+		if r.Header.Get("X-Forwarded-Proto") != "http" {
+			t.Errorf("got X-Forwarded-Proto = %s, want %s", r.Header.Get("X-Forwarded-Proto"), "http")
+		}
+
 		w.Header().Set("Response-Header", "test")
 
 		w.Header().Set("Connection", "close, Remove-Header")
@@ -70,22 +103,12 @@ func TestHandleRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := gorp.ReverseProxy{Upstream: upstreamURL}
+	handler := gorp.ReverseProxy{
+		Upstream:        upstreamURL,
+		AddXFHeaders:    true,
+		RemoveXFHeaders: true,
+	}
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", TestProxyURL, nil)
-	req.Proto = TestProto
-	req.TransferEncoding = []string{"gzip", "chunked"}
-	req.Header.Set("TE", "trailers, deflate")
-	req.Header.Set("Connection", "close, Remove-Header")
-	req.Header.Set("Keep-Alive", "test")
-	req.Header.Set("Upgrade", "test")
-	req.Header.Set("Trailer", "Trailer-Header")
-	req.Header.Set("Proxy-Authorization", "test")
-	req.Header.Set("Proxy-Authenticate", "test")
-	req.Header.Set("Remove-Header", "test")
-
-	req.Header.Set("Via", "john")
-
 	handler.ServeHTTP(w, req)
 	res := w.Result()
 
