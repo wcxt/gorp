@@ -46,7 +46,7 @@ func main() {
 	seenFlags := map[string]bool{}
 	flag.Visit(func(f *flag.Flag) { seenFlags[f.Name] = true })
 
-	if !seenFlags["dst"] {
+	if !seenFlags["upstream"] {
 		fmt.Fprintln(os.Stderr, "required flag -upstream was not provided")
 		flag.Usage()
 		os.Exit(2)
