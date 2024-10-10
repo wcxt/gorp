@@ -40,7 +40,14 @@ func validate() error {
 	return nil
 }
 
+func usage() {
+	fmt.Fprintln(flag.CommandLine.Output(), "Usage: gorp [flags]\n")
+	fmt.Fprintln(flag.CommandLine.Output(), "Flags:")
+	flag.PrintDefaults()
+}
+
 func main() {
+	flag.Usage = usage
 	flag.Parse()
 
 	seenFlags := map[string]bool{}
