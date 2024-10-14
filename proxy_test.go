@@ -85,6 +85,10 @@ func TestHandleRequest(t *testing.T) {
 			t.Errorf("got X-Forwarded-Proto = %s, want %s", r.Header.Get("X-Forwarded-Proto"), "http")
 		}
 
+		if r.Header.Get("Header-In-Config") != "test" {
+			t.Errorf("got Header-In-Config = %s, want %s", r.Header.Get("Header-In-Config"), "test")
+		}
+
 		w.Header().Set("Response-Header", "test")
 
 		w.Header().Set("Connection", "close, Remove-Header")
@@ -107,6 +111,8 @@ func TestHandleRequest(t *testing.T) {
 		Upstream:        upstreamURL,
 		AddXFHeaders:    true,
 		RemoveXFHeaders: true,
+		AddInHeaders:    map[string]string{"Header-In-Config": "test"},
+		AddOutHeaders:   map[string]string{"Header-Out-Config": "test"},
 	}
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -123,6 +129,10 @@ func TestHandleRequest(t *testing.T) {
 	}
 	if res.Header.Get("Remove-Header") != "test" {
 		t.Errorf("got response Remove-Header = %s, want %s", res.Header.Get("Remove-Header"), "")
+	}
+
+	if res.Header.Get("Header-Out-Config") != "test" {
+		t.Errorf("got Header-Out-Config = %s, want %s", res.Header.Get("Header-Out-Config"), "test")
 	}
 
 	body, err := io.ReadAll(res.Body)
