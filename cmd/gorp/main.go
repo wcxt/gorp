@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -9,11 +10,32 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/wcxt/gorp"
 )
 
+// NOTE: Maybe this could go to some other file
+type FlagStringMap map[string]string
+
+func (f *FlagStringMap) String() string {
+	return fmt.Sprintf("%v", *f)
+}
+
+func (f *FlagStringMap) Set(value string) error {
+	substrings := strings.Split(value, ":")
+	if len(substrings) != 2 {
+		return errors.New("parse error")
+	}
+	(*f)[substrings[0]] = substrings[1]
+	return nil
+}
+
+// TODO: Should probably be moved to go main with the init flags
 var (
+	AddInHeadersFlag  = FlagStringMap{}
+	AddOutHeadersFlag = FlagStringMap{}
+
 	portFlag     = flag.Int("port", 8080, "port at which proxy will be accepting requests")
 	pathFlag     = flag.String("path", "/", "HTTP path to which origin server will be proxied to")
 	upstreamFlag = flag.String("upstream", "", "proxied HTTP origin server (required)")
@@ -22,6 +44,12 @@ var (
 	AddXFFlag    = flag.Bool("add-xf-headers", true, "Adds XF headers proxy server request")
 	RemoveXFFlag = flag.Bool("remove-xf-headers", true, "Removes XF headers from incoming request")
 )
+
+func init() {
+	// NOTE: Maybe header list should also be validated
+	flag.Var(&AddInHeadersFlag, "add-in-headers", "Adds headers to incoming request")
+	flag.Var(&AddOutHeadersFlag, "add-out-headers", "Adds headers to outgoing request")
+}
 
 func validate() error {
 	if err := gorp.ValidatePort(*portFlag); err != nil {
@@ -82,6 +110,8 @@ func main() {
 		Upstream:        parsedUpstream,
 		AddXFHeaders:    *AddXFFlag,
 		RemoveXFHeaders: *RemoveXFFlag,
+		AddInHeaders:    AddInHeadersFlag,
+		AddOutHeaders:   AddOutHeadersFlag,
 	})
 
 	if *certFileFlag != "" || *keyFileFlag != "" {

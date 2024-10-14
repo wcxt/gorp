@@ -28,6 +28,8 @@ type ReverseProxy struct {
 	Upstream        *url.URL
 	RemoveXFHeaders bool
 	AddXFHeaders    bool
+	AddInHeaders    map[string]string
+	AddOutHeaders   map[string]string
 }
 
 func (rp *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +66,10 @@ func (rp *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	for header, value := range rp.AddInHeaders {
+		req.Header.Set(header, value)
+	}
+
 	res, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
 		log.Print(err)
@@ -87,6 +93,10 @@ func (rp *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		trailers = append(trailers, trailer)
 	}
 	w.Header().Add("Trailer", strings.Join(trailers, ", "))
+
+	for header, value := range rp.AddOutHeaders {
+		w.Header().Set(header, value)
+	}
 
 	w.WriteHeader(res.StatusCode)
 
